@@ -1,0 +1,1 @@
+"0","text(-mds$points[,1],-mds$points[,2], labels = c, col=""red"")"

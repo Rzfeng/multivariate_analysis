@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1544476515730.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "4108638427",
+    "id" : "C6EAC29D",
+    "lastKnownWriteTime" : 1544476487,
+    "last_content_update" : 1544497390954,
+    "path" : "~/Documents/school/456/proj/analysis.Rmd",
+    "project_path" : "analysis.Rmd",
+    "properties" : {
+        "cursorPosition" : "166,3",
+        "scrollLine" : "167"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

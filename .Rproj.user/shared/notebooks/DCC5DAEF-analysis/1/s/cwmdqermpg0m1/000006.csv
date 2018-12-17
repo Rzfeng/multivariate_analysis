@@ -1,0 +1,3 @@
+"0","mtree3 <- hclust(dist(ds), method=""complete"")"
+"2","NAs introduced by coercion"
+"0","plot(mtree3,labels=c,ylab=""Distance"",main=""Complete linkage"") "

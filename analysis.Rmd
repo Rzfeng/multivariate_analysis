@@ -9,29 +9,41 @@ output:
 https://openmv.net/info/food-consumption
 
 Abstract:
-Given a dataset with the percentage of people who consume a certain type of food in European countries
+Given a dataset with the percentage of people who consume a certain type of food in European and Scandanavian countries. The goal in mind was finding why countries with similar percentage of populations consuming different food types occur. Some possibilities examined in this study include geographical reasons, cultural reasons, and socioeconomic reasons.
 
 Intro:
-Upon analyzing the dataset, a small amount of NAs were found. Particularly, Spain was missing a "Sweetener" statistic, Sweden was missing a "Biscuits" statistic, and Finland was missing a "Yoghurt" statistic. Because there is no other data to help make an estimate of these values, it was decided that these countries should simply be omitted. A study of the remaining 13 countries across 21 dimensions is appropriate and extensive enough to provide some interesting analysis.
+
+The dataset obtain comes from Kevin Dunn, author of "Process Improvement Using Data."
+
+  Upon analyzing the dataset, a small amount of NAs were found. Particularly, Spain was missing a "Sweetener" statistic, Sweden was missing a "Biscuits" statistic, and Finland was missing a "Yoghurt" statistic. Because only one variable is missing for each of these three countries, these missing values will be replaced by an average of the column. Although we could simply omit these three countries, we would be losing a lot of data, as only one variable in each country is missing. It will have to be kept in mind that these three statistics for these three countries were estimated, as these values are unreliable for their particular variable and will be biased. Ocassionally, for stronger evidence, these three countries will be omitted completely during analysis.
 
 
 
 ```{r, echo=F, results = 'hide'}
+library(vegan)
 #install.packages("MVA")
 library(MVA)
 #install.packages("TeachingDemos")
 #install.packages("Amelia")
 #install.packages("mclust")
 library(TeachingDemos)
-library(Amelia)
+#library(Amelia)
 library(mclust)
+library(MASS)
 
+#makes dissimilarity matrix
+library(cluster)
 ```
 
-```{r}
+```{r, echo=F, results = 'hide'}
 #ds <-read.csv("~/Downloads/food.csv")
 ds <- read.csv("~/Documents/School/456/proj/food.csv")
-ds <- na.omit(ds)
+ods <- na.omit(ds)
+
+for(i in 1:ncol(ds)){
+  ds[is.na(ds[,i]), i] <- mean(ds[,i], na.rm = TRUE)
+}
+
 real.coffee <-ds$Real.coffee
 instant.coffee<-ds$Instant.coffee
 tea<-ds$Tea
@@ -58,63 +70,74 @@ short.c <- abbreviate(c, minlength = 3)
 ```
 
 
+  Some initial visualization of the data was performed to quickly give some indications of interesting features that could be analyzed. From the Chernoff Faces in figure 2.1, we can see countries who are similar accross the first 18 out of 20 food consumptions, which excludes yoghurt and crisp bread.
 ```{r}
-faces2(ds[,-1], labels=c)
+faces2(ds[,2:19], labels=c)
+title(main = "Chernoff Faces of European Countries and Food Consumption", sub = "Figure 1.1")
 ```
 
-  From the Chernoff Faces, we can see countries who are similar accross the first 18 out of 20 food consumptions, which excludes yoghurt and crisp bread.
-  Italy, Belgium, and France all have football, oval shaped heads. This shows how these three countries have a small population of people that drink tea. Upon further examintion of figure ___, this is indeed true, as those three countries have the lowest percenage of people who drink tea. Similarly, Luxembourg, Holland, Ireland, and Switzerland all have long noses, indicating they have the highest percentage of people who drink powdered soup. 
-  Using the chernoff faces as a brief initial analysis to identify trends between countries, star plots of the interesting variables are plotted in figure ___.
-  
-
-To further see similarities across all 20 dimensions, a star plot was taken to include yoghurt and crisp bread consumption.
+  The feature that stands out the most are the shapes of the faces. Italy, France, Belgium, and Spain all have oval, short faces. Portugal, Austria, Norway, and Finland have rounder heads. The rest of the countries, Germany, Holland, Luxembourg, England, Swizterland, Sweden, Denmark, and Ireland have tall faces. This indicates the country's tea consumption. The countries with tall faces such as England and Holland have a higher population of tea drinkers than countries such as Belgium and Spain with short faces.
+  Another easily identifiable feature is the length of the noses. Luxembourg, Holland, Ireland, and Switzerland all have long noses, indicating they have the highest percentage of people who drink powdered soup. Faces with shorter noses such as Belgium, Finland, and Austria have very short noses, indicating that the amount of powdered soup drinkers are drastically lower than countries such as Luxembourg with long noses.
+  There are many other features (18 to be exact) that could be analyzed, but for now, these Chernoff Faces serve as a brief initial overview of some similarities between the 16 countries. The star plots in figure 2.1 were created for a more complete summary that incorporates all 20 variables rather than just 18. However, these star plots are much less intuitive to read. Similarly to Chernoff Faces, these star plots also serve as a nice summary of the countries and observing which countries are similar to each other.
 
 ```{r}
 stars(ds[,2:20],
       nrow=4,ncol=4,labels=c, main="Star Plot of Food Consumption")
+title(sub = "Figure 1.2")
 ```
 
 
-Trees of all 20 dimensions across 13 countries
-```{r}
-mtree <- hclust(dist(ds), method="average")
-plot(mtree,labels=c,ylab="Distance",main="Average linkage") 
-mtree2 <- hclust(dist(ds), method="single")
-plot(mtree2,labels=c,ylab="Distance",main="Single linkage") 
-mtree3 <- hclust(dist(ds), method="complete")
-plot(mtree3,labels=c,ylab="Distance",main="Complete linkage") 
+Seeing as some countries contain populations that are similar, while other countries drastically varied between them, an apparent question is why are some of these countries so different or similar to other countries?
 
-```
-
-
-```{r}
-y <- cbind(real.coffee, instant.coffee, tea, sweetener, biscuits, powder.soup, tin.soup, potatoes, frozen.fish, frozen.veggies, apples, oranges, tinned.fruit, jam, garlic, butter, margarine, olive.oil, yogurt, crisp.bread)
-
-cor(y)
-
-pca <- prcomp(y, scale=T)
-#summary(pca)
-
-a1 <- pca$rotation[,1];a1
-center <- pca$center
-scale <- pca$scale
-temp <- as.matrix(ds[,-1])
-drop(scale(temp, center = center, scale = scale) %*% pca$rotation[,1])
-#predict(pca)[,1]
-
-plot(pca)
-```
-
-With PC1, PC2, PC3, and PC4, approximately 74% of the total variance is accounted for.
 
 
 Within the 20 dimensions, there are a couple variables that are interesting to further analyze within their own group. This includes the following subgroups:
 
 Group 1: Real Coffee, Instant Coffee, Tea, Sweetener, Biscuits
-Group 2: Butter, Margarine, Olive Oil
+Group 2: Garlic, Butter, Margarine, Olive Oil
 Group 3: Apples, Oranges, Tinned Fruit, Jam
 Group 4: Frozen Fish, Frozen Vegetables
-Group 5: Tin Soup, Powder Soup
+Group 5: Tin Soup, Powder Soup, Potatoes, Crisp Bread, Yoghurt.
+
+  Starting with the first group, as previously analyzed, it was seen how some countries such as England and Holland had an extremely high population percentage of people who drank tea, while countries such as Spain has barely any tea drinkers. Does this inversely mean that England and Holland barely drink any coffee while Spain drinks a lot of coffee?
+  In figure 2.1, there is a slight negative correlation between the percentage of real coffee drinkers and instant coffee drinkers. There are two countries that have extremely low amounts of coffee drinkers, but still moderately high amount of instant coffee drinkers. These two countries are Ireland and England. When looking at coffee and tea drinkers, the two countries that have high percentage of tea drinkers but the lowest percentage of coffee drinkers are also Ireland and England. A potential explanation for this is that since Ireland and England are heavy tea drinkers, there are not many opportunities to consume real coffee, such as having low amounts of coffee shops and real coffee not being sold in stores that often. Thus,the people who do want to drink coffee resort to instant coffee. Similarly, some heavy tea drinkers may occasionally want a coffee, but instead of getting real coffee, they'll simply consume some instant cofee.
+
+```{r}
+pairs(ds[,2:6],
+  panel=function(x,y,...){
+    points(x,y,type="n",...)
+    text(y ~ x, labels = short.c)
+    abline(lm(y ~ x),col="red")
+  },col="blue")
+title(sub = "Figure 2.1")
+
+```
+
+
+```{r}
+sm <- dist(ds[,2:6])
+dm <- daisy(as.matrix(sm))
+mds <- cmdscale(sm,k=4,eig=TRUE)
+mds2 <- cmdscale(dm,k=4,eig=TRUE)
+
+#mds$eig
+#sum(abs(mds$eig[1:2]))/sum(abs(mds$eig))
+#sum(mds$eig[1:2]^2)/sum(mds$eig^2)
+par(cex=1.5)
+plot(-mds$points[,1],-mds$points[,2],type="n", xlab="Coordinate 1",ylab="Coordinate 2", main="Classic MDS, Similarities")
+text(-mds$points[,1],-mds$points[,2], labels = c, col="red")
+
+par(cex=1.5)
+plot(-mds2$points[,1],-mds2$points[,2],type="n", xlab="Coordinate 1",ylab="Coordinate 2", main="Classic MDS, Dissimilarities")
+text(-mds2$points[,1],-mds2$points[,2], labels = c, col="red")
+
+```
+
+MDS Goal: To represent an observed proximity matrix geometrically. Proximity matrix can measure similarity or dissimilarity.
+
+Switzerland is not part of the European Union. Although is it the center of many European countries such as Germany, France, and Italy, 
+
+
 
 ```{r}
 pairs(ds[,17:19],
@@ -123,6 +146,8 @@ pairs(ds[,17:19],
     #text(y ~ x, labels = short.c)
     abline(lm(y ~ x),col="red")
   },col="blue")
+title(sub = "Figure 2.1")
+
 ```
 
 ```{r}
@@ -134,15 +159,7 @@ pairs(ds[,12:15],
   },col="blue")
 ```
 At a glance, apples and oranges 
-```{r}
-pairs(ds[,2:6],
-  panel=function(x,y,...){
-    points(x,y,...)
-    #text(y ~ x, labels = short.c)
-    abline(lm(y ~ x),col="red")
-  },col="blue")
-```
-Here we can see how the sweetener is positively correlated with real coffee, instant coffee, and tea. This suggests countries with a high number of coffee, instant coffee, and tea drinkers, are also likely to have a high number of sweetener users. It's also apparent that people seem to enjoy eating biscuits with all three drinks. In the biscuits vs real coffee, the line of best fit looks like a negative correlation. When observing a scatterplot, it's clear to see that there are outliers Ireland and England, due to the fact that both these countries are heavy tea drinkers and barely have a coffee drinking population. Upon removing these outliers, a positive correlation between Biscuits and Real Coffee is revealed.
+
 
 ```{r}
 plot(biscuits ~ real.coffee, type = "n")
@@ -155,37 +172,43 @@ text(tea ~ real.coffee, labels = c)
 
 Looking at a world map, England and Ireland are geographically connected and located right next to each other. Some cultural similarities most likely carried over between the two countries, thus resulting in both these countries having dense population of tea drinkers. With this in mind, it is worth investigating whether where countries are geographically located influences their different food consumption population. This leads to some multidimensional scaling (MDS).
 
-```{r}
-dm <- dist(ds[,-1])
-mds <- cmdscale(dm,k=11,eig=TRUE)
-mds$eig
-sum(abs(mds$eig[1:2]))/sum(abs(mds$eig))
-sum(mds$eig[1:2]^2)/sum(mds$eig^2)
-par(cex=1.5)
-plot(-mds$points[,1],-mds$points[,2],type="n", xlab="Coordinate 1",ylab="Coordinate 2", main="Classic MDS")
-text(-mds$points[,1],-mds$points[,2], labels = c, col="red")
-```
 
+Canonical Correlation Analysis
 
-
+Assesing the relationships between the sweeter foods versus the saltier foods
 
 ```{r}
-y <- cbind(real.coffee, instant.coffee, tea, sweetener, biscuits)
+x1 <- scale(ds$Apples)
+x2 <- scale(ds$Oranges)
+x3 <- scale(ds$Tinned.fruit)
+x4 <- scale(ds$Jam)
 
-cor(y)
+y1 <- scale(ds$Garlic)
+y2 <- scale(ds$Butter)
+y3 <- scale(ds$Margarine)
+y4 <- scale(ds$Olive.oil)
 
-pca <- prcomp(y, scale=T)
-summary(pca)
+cormat <- cor(cbind(x1, x2, x3, x4, y1, y2, y3, y4))
 
-a1 <- pca$rotation[,1];a1
-center <- pca$center
-scale <- pca$scale
-temp <- as.matrix(ds[,c(2:6)])
-drop(scale(temp, center = center, scale = scale) %*% pca$rotation[,1])
-#predict(pca)[,1]
+r11 <- cormat[1:4, 1:4]
+r12 <- cormat[1:4, 5:8]
+r22 <- cormat[5:8, 5:8]
+r21 <- t(r12)
 
-plot(pca)
+e1 <- solve(r11) %*% r12 %*% solve(r22) %*% r21
+e2 <- solve(r22) %*% r21 %*% solve(r11) %*% r12
+
+sqrt(eigen(e1)$values)
+
+x <- cbind(x1, x2, x3, x4)
+y <- cbind(y1, y2, y3, y4)
+u <- x %*% eigen(e1)$vectors
+v <- y %*% eigen(e2)$vectors
+cor(u, x)
+cor(v, y)
 ```
+
+V1 = 0.4119624Y1 - 0.2990512Y2 + 0.3041398Y3 - 0.9052045Y4
 
 
 ```{r}
@@ -219,5 +242,111 @@ text(biscuits ~ tea, labels = c)
 
 
 
+###############PCA###################
 
+
+```{r}
+y <- cbind(real.coffee, instant.coffee, tea, sweetener, biscuits, powder.soup, tin.soup, potatoes, frozen.fish, frozen.veggies, apples, oranges, tinned.fruit, jam, garlic, butter, margarine, olive.oil, yogurt, crisp.bread)
+
+cor(y)
+
+pca <- prcomp(y, scale=T)
+summary(pca)
+
+a1 <- pca$rotation[,1];a1
+center <- pca$center
+scale <- pca$scale
+temp <- as.matrix(ds[,-1])
+drop(scale(temp, center = center, scale = scale) %*% pca$rotation[,1])
+#predict(pca)[,1]
+
+plot(pca)
+```
+
+With PC1, PC2, PC3, and PC4, approximately 74% of the total variance is accounted for.
+
+PCA: considers interrelationships within a set of variables.
+
+
+```{r}
+y <- cbind(real.coffee, instant.coffee, tea, sweetener, biscuits, powder.soup, tin.soup, potatoes, frozen.fish, frozen.veggies, apples, oranges, tinned.fruit, jam, garlic, butter, margarine, olive.oil, yogurt, crisp.bread)
+
+
+cor(y)
+
+pca <- prcomp(y, scale=T)
+summary(pca)
+
+a1 <- pca$rotation[,1];a1
+center <- pca$center
+scale <- pca$scale
+temp <- as.matrix(ds[,c(2:21)])
+drop(scale(temp, center = center, scale = scale) %*% pca$rotation[,1])
+#predict(pca)[,1]
+
+plot(pca)
+
+pairs(pca$x[,1:5],
+  panel=function(x,y,...){
+    points(x,y,...)
+    #text(y ~ x, labels = short.c)
+    #abline(lm(y ~ x),col="red")
+  },col="blue")
+```
+
+
+```{r}
+y <- cbind(real.coffee, instant.coffee, tea, sweetener, biscuits)
+
+cor(y)
+
+pca <- prcomp(y, scale=T)
+summary(pca)
+
+a1 <- pca$rotation[,1];a1
+center <- pca$center
+scale <- pca$scale
+temp <- as.matrix(ds[,c(2:6)])
+drop(scale(temp, center = center, scale = scale) %*% pca$rotation[,1])
+#predict(pca)[,1]
+
+plot(pca)
+
+pairs(pca$x[,1:4],
+  panel=function(x,y,...){
+    points(x,y,...)
+    #text(y ~ x, labels = short.c)
+    #abline(lm(y ~ x),col="red")
+  },col="blue")
+#plot(pca$x[,1], pca$x[,2])
+
+```
+
+```{r, }
+par(mfrow = c(1, 3))
+#Single linkeage
+stree <- hclust(dist(ds),method="single")
+plot(stree,main="Single linkage", labels=c) 
+#text(stree, labels=c)
+#m <- length(stree$height)
+#k <- 2 # number of clusters
+#ht <- 0.5*(stree$height[m-k+1]+stree$height[m-k+2]) 
+#abline(h=ht,lty=2)
+
+#Complete linkeage
+ctree <- hclust(dist(ds),method="complete") 
+plot(ctree,main="Complete linkage", labels=c) 
+#m <- length(stree$height)
+#k <- 4 # number of clusters
+#ht <- 0.5*(ctree$height[m-k+1]+ctree$height[m-k+2]) 
+#abline(h=ht,lty=2)
+
+#Average linkeage
+mtree <- hclust(dist(ds),method="average")
+plot(mtree, main="Average linkage", labels=c)
+#m <- length(mtree$height)
+#k <- 3 # number of clusters
+#ht <- 0.5*(mtree$height[m-k+1]+mtree$height[m-k+2]) 
+#abline(h=ht,lty=2)
+```
 

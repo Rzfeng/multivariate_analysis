@@ -1,0 +1,6 @@
+"0","pairs(ds[,12:15],"
+"0","  panel=function(x,y,...){"
+"0","    points(x,y,...)"
+"0","    #text(y ~ x, labels = short.c)"
+"0","    abline(lm(y ~ x),col=""red"")"
+"0","  },col=""blue"")"
